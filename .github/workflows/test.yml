@@ -1,0 +1,49 @@
+name: CICD
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Checkout repo code
+        uses: actions/checkout@v4
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install app dependencies
+        run: pip install -r requirements.txt
+      - name: Install test dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Run tests
+        run: pytest
+
+  build-image:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo code
+        uses: actions/checkout@v4
+      - name: Build Image
+        run: docker build -t learning-backend:ci .
+
+  deploy:
+    needs: build-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo code
+        uses: actions/checkout@v4what
+      - name: Load image into minikube
+        run: minikube image load learning-backend:ci
+      - name: Apply deployment manifest
+        run: kubectl apply -f k8s/deployment.yaml
+      - name: Verify rollout
+        run: kubectl rollout status deployment/learning-backend
