@@ -19,6 +19,17 @@ def test_health_returns_ok() -> None:
     assert response.json() == {"status": "ok"}
 
 
+def test_info_returns_app_metadata() -> None:
+    response = client.get("/api/info")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "name": "learning-backend",
+        "version": "0.1.0",
+        "sync_model": "argocd-manual",
+    }
+
+
 def test_analyze_returns_expected_matches() -> None:
     response = client.post(
         "/api/analyze",

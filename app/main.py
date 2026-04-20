@@ -27,6 +27,15 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/api/info")
+def info() -> dict[str, str]:
+    return {
+        "name": "learning-backend",
+        "version": app.version,
+        "sync_model": "argocd-manual",
+    }
+
+
 @app.post("/api/analyze", response_model=AnalyzeResponse)
 def analyze(request: AnalyzeRequest) -> AnalyzeResponse:
     text = request.text.strip()
