@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: learning-backend
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/allamta/learning-backend.git
+    targetRevision: main
+    path: infrastructure/k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
