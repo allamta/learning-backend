@@ -11,20 +11,26 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: .
+        working-directory: app
     steps:
       - name: Checkout repo code
         uses: actions/checkout@v4
       - name: Set up python
+        if: ${{ !env.ACT }}
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Use preinstalled Python in act
+        if: ${{ env.ACT }}
+        run: python3 --version
+      - name: Create virtual environment
+        run: python3 -m venv .venv
       - name: Install app dependencies
-        run: pip install -r requirements.txt
+        run: .venv/bin/python -m pip install -r requirements.txt
       - name: Install test dependencies
-        run: pip install -r requirements-dev.txt
+        run: .venv/bin/python -m pip install -r requirements-dev.txt
       - name: Run tests
-        run: pytest
+        run: .venv/bin/python -m pytest
 
   build-image:
     needs: test
@@ -33,17 +39,17 @@ jobs:
       - name: Checkout repo code
         uses: actions/checkout@v4
       - name: Build Image
-        run: docker build -t learning-backend:ci .
+        run: docker build -t learning-backend:ci app
 
   deploy:
     needs: build-image
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo code
-        uses: actions/checkout@v4what
+        uses: actions/checkout@v4
       - name: Load image into minikube
         run: minikube image load learning-backend:ci
       - name: Apply deployment manifest
-        run: kubectl apply -f k8s/deployment.yaml
+        run: kubectl apply -f infrastructure/k8s/deployment.yaml
       - name: Verify rollout
         run: kubectl rollout status deployment/learning-backend

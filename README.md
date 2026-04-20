@@ -1,145 +1,93 @@
 # Learning Backend
 
-Minimal FastAPI backend used to practice Docker and Kubernetes deployment basics.
+This repository is the local learning track for the backend application.
 
-## What This Project Does
+It is intentionally organized into two main areas so the difference between application work and deployment work is explicit.
 
-This service exposes:
-
-- `GET /health` for a simple health check
-- `POST /api/analyze` for mocked ingredient analysis
-
-The analysis endpoint does basic keyword matching against the submitted text:
-
-- `sugar` -> `unhealthy`
-- `oats` -> `healthy`
-- `salt` -> `neutral`
-- no match -> `Unknown`
-
-This is intentionally simple. The goal of the project is learning containerization and Kubernetes concepts, not building a real nutrition analysis engine.
-
-## Project Structure
+## Repository Structure
 
 ```text
 .
+|-- .github/
+|   `-- workflows/
+|       `-- test.yml
 |-- app/
-|   `-- main.py
-|-- k8s/
-|   |-- deployment.yaml
-|   `-- service.yaml
-|-- Dockerfile
-|-- requirements.txt
+|   |-- Dockerfile
+|   |-- README.md
+|   |-- main.py
+|   |-- requirements-dev.txt
+|   |-- requirements.txt
+|   `-- tests/
+|       `-- test_main.py
+|-- infrastructure/
+|   `-- k8s/
+|       |-- deployment.yaml
+|       `-- service.yaml
 `-- README.md
 ```
 
-## Requirements
+## What Each Area Means
 
-- Python 3.11+
-- Docker
-- Kubernetes cluster such as Docker Desktop Kubernetes, `minikube`, or `kind`
+### `app/`
 
-## Run Locally
+This directory contains the application and image-build concerns:
 
-Install dependencies:
+- FastAPI source code
+- Python dependency files
+- tests
+- Dockerfile
+- app-specific README
 
-```bash
-pip install -r requirements.txt
-```
+This is the part that answers:
 
-Start the API:
+- what the application does
+- how the application is tested
+- how the application image is built
 
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8080
-```
+### `infrastructure/`
 
-Open:
+This directory contains deployment configuration concerns:
 
-- `http://localhost:8080/health`
-- `http://localhost:8080/docs`
+- Kubernetes manifests
+- later, this can also contain Argo CD or other deployment-related definitions
 
-## API Examples
+This is the part that answers:
 
-Health check:
+- where the application runs
+- how Kubernetes should deploy it
+- what desired state should exist in the cluster
 
-```bash
-curl http://localhost:8080/health
-```
+### `.github/workflows/`
 
-Example analyze request:
+This directory contains pipeline orchestration for the whole repository.
 
-```bash
-curl -X POST http://localhost:8080/api/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"text":"oats with sugar and salt"}'
-```
+The workflow lives at repo level because it coordinates both:
 
-Example response:
+- application steps such as test and image build
+- infrastructure/deployment steps such as applying manifests
 
-```json
-{
-  "assessments": {
-    "Sugar": {
-      "rating": "unhealthy",
-      "reason": "High added sugar is usually treated as a less healthy ingredient."
-    },
-    "Oats": {
-      "rating": "healthy",
-      "reason": "Oats are commonly treated as a fiber-rich whole grain ingredient."
-    },
-    "Salt": {
-      "rating": "neutral",
-      "reason": "Salt is not automatically bad, but intake depends on quantity and context."
-    }
-  }
-}
-```
+## Current Workflow Model
 
-## Docker
+The current pipeline stages are:
 
-Build the image:
+1. `test`
+2. `build-image`
+3. `deploy`
 
-```bash
-docker build -t learning-backend:local .
-```
+Current intent:
 
-Run the container:
-
-```bash
-docker run --rm -p 8080:8080 learning-backend:local
-```
-
-The container runs the app with:
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8080
-```
-
-## Kubernetes
-
-Kubernetes manifests are in `k8s/`.
-
-- `deployment.yaml` creates a Deployment named `learning-backend`
-- the Deployment runs `2` replicas
-- the container image is `learning-backend:local`
-- the app listens on container port `8080`
-- `service.yaml` exposes the app on Service port `80` and forwards to `8080`
-
-Apply the manifests:
-
-```bash
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
-```
-
-Check resources:
-
-```bash
-kubectl get deployments
-kubectl get pods
-kubectl get services
-```
+- `test` validates the app in `app/`
+- `build-image` builds the Docker image from `app/`
+- `deploy` applies Kubernetes configuration from `infrastructure/`
 
 ## Notes
 
-- This backend returns mocked results for learning purposes.
-- If you use a local Kubernetes cluster, make sure the cluster can access the `learning-backend:local` image, or load/push the image appropriately for your environment.
+- For local learning, `minikube` is still the active cluster path.
+- The `deploy` stage is environment-coupled to the local host setup.
+- The app/deployment split is mainly for learning clarity and GitOps-style reasoning.
+
+## Where To Read Next
+
+- start with [app/README.md](/Users/talllam/Documents/docker-kubernetes/learning-backend/app/README.md) for app-specific details
+- use [.github/workflows/test.yml](/Users/talllam/Documents/docker-kubernetes/learning-backend/.github/workflows/test.yml) for pipeline learning
+- use [infrastructure/k8s/deployment.yaml](/Users/talllam/Documents/docker-kubernetes/learning-backend/infrastructure/k8s/deployment.yaml) and [service.yaml](/Users/talllam/Documents/docker-kubernetes/learning-backend/infrastructure/k8s/service.yaml) for Kubernetes deployment learning
