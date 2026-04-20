@@ -6,6 +6,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -32,24 +36,22 @@ jobs:
       - name: Run tests
         run: .venv/bin/python -m pytest
 
-  build-image:
+  build-and-push-image:
     needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo code
         uses: actions/checkout@v4
-      - name: Build Image
-        run: docker build -t learning-backend:ci app
-
-  deploy:
-    needs: build-image
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo code
-        uses: actions/checkout@v4
-      - name: Load image into minikube
-        run: minikube image load learning-backend:ci
-      - name: Apply deployment manifest
-        run: kubectl apply -f infrastructure/k8s/deployment.yaml
-      - name: Verify rollout
-        run: kubectl rollout status deployment/learning-backend
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set short SHA tag
+        run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+      - name: Build image
+        run: docker build -t ghcr.io/${{ github.repository_owner }}/learning-backend:${IMAGE_TAG} app
+      - name: Push image to GHCR
+        run: docker push ghcr.io/${{ github.repository_owner }}/learning-backend:${IMAGE_TAG}
