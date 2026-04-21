@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
         - name: api
-          image: ghcr.io/allamta/learning-backend:ci
+          image: ghcr.io/allamta/learning-backend:5779bd4
           ports:
             - containerPort: 8080
